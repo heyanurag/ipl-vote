@@ -1,16 +1,16 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Header } from "@/components/layout/header"
-import { HomePage } from "@/pages/home-page"
-import { MatchesPage } from "@/pages/matches-page"
-import { ProfilePage } from "@/pages/profile-page"
-import { AuthPage } from "@/pages/auth-page"
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { ThemeProvider } from '@/components/theme-provider'
+import { Header } from '@/components/layout/header'
+import { HomePage } from '@/pages/home-page'
+import { MatchesPage } from '@/pages/matches-page'
+import { ProfilePage } from '@/pages/profile-page'
+import { AuthPage } from '@/pages/auth-page'
 
 function App() {
   const [user, setUser] = useState<any>(null)
@@ -32,6 +32,7 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(event)
       setUser(session?.user || null)
       setLoading(false)
     })
@@ -87,4 +88,3 @@ function App() {
 }
 
 export default App
-
