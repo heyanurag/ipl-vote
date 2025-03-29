@@ -56,10 +56,11 @@ export function getMatchStatus(match: Match): 'upcoming' | 'live' | 'completed' 
     return 'live'
   }
 
-  const matchDateTime = new Date(`${match.match_date}T${match.match_time}`)
-  const now = new Date()
+  const matchDateTimeString = `${match.match_date}T${match.match_time}`
+  const matchTimestamp = Date.parse(matchDateTimeString)
+  const nowTimestamp = Date.now()
 
-  if (matchDateTime <= now) {
+  if (matchTimestamp <= nowTimestamp) {
     return 'live'
   }
 
