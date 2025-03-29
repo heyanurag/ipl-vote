@@ -1,24 +1,25 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { supabase } from "@/lib/supabase"
-import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { User, LogOut, Trophy, Calendar } from "lucide-react"
+} from '@/components/ui/dropdown-menu'
+import { User, LogOut, Trophy, Calendar } from 'lucide-react'
+import { User as UserType } from '@supabase/supabase-js'
 
 export function Header() {
   const navigate = useNavigate()
-  const [user, setUser] = useState<any>(null)
-  const [username, setUsername] = useState<string>("")
+  const [user, setUser] = useState<UserType | null>(null)
+  const [username, setUsername] = useState<string>('')
 
   useEffect(() => {
     // Get current user
@@ -30,7 +31,11 @@ export function Header() {
 
       if (user) {
         // Get user profile
-        const { data } = await supabase.from("profiles").select("username").eq("id", user.id).single()
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single()
 
         if (data) {
           setUsername(data.username)
@@ -44,12 +49,12 @@ export function Header() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
+      if (event === 'SIGNED_IN' && session?.user) {
         setUser(session.user)
-        navigate("/")
-      } else if (event === "SIGNED_OUT") {
+        navigate('/')
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
-        navigate("/auth")
+        navigate('/auth')
       }
     })
 
@@ -68,14 +73,19 @@ export function Header() {
         <div className="flex items-center gap-6">
           <Link to="/" className="flex items-center gap-2">
             <Trophy className="h-6 w-6" />
-            <span className="text-xl font-bold">IPL Voting</span>
+            {/* Hide text on mobile, show on larger screens */}
+            <span className="text-xl font-bold hidden md:inline">IPL Voting</span>
           </Link>
 
-          <nav className="hidden md:flex gap-6">
+          {/* Always show navigation links */}
+          <nav className="flex gap-4 md:gap-6">
             <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
               Home
             </Link>
-            <Link to="/matches" className="text-sm font-medium transition-colors hover:text-primary">
+            <Link
+              to="/matches"
+              className="text-sm font-medium transition-colors hover:text-primary"
+            >
               Matches
             </Link>
           </nav>
@@ -100,7 +110,10 @@ export function Header() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to={`/profile/${user.id}`} className="cursor-pointer flex w-full items-center">
+                  <Link
+                    to={`/profile/${user.id}`}
+                    className="cursor-pointer flex w-full items-center"
+                  >
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </Link>
@@ -128,4 +141,3 @@ export function Header() {
     </header>
   )
 }
-

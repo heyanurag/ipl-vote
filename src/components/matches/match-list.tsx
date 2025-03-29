@@ -1,15 +1,15 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
-import { MatchCard } from "@/components/matches/match-card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { isToday } from "@/lib/utils"
-import type { Database } from "@/lib/database.types"
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { MatchCard } from '@/components/matches/match-card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Skeleton } from '@/components/ui/skeleton'
+import { isToday } from '@/lib/utils'
+import type { Database } from '@/lib/database.types'
 
-type Team = Database["public"]["Tables"]["teams"]["Row"]
-type Match = Database["public"]["Tables"]["matches"]["Row"] & {
+type Team = Database['public']['Tables']['teams']['Row']
+type Match = Database['public']['Tables']['matches']['Row'] & {
   team1: Team
   team2: Team
   winner?: Team
@@ -18,41 +18,44 @@ type Match = Database["public"]["Tables"]["matches"]["Row"] & {
 export function MatchList() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState('all')
 
-  useEffect(() => {
-    const fetchMatches = async () => {
-      setLoading(true)
+  const fetchMatches = async () => {
+    setLoading(true)
 
-      // Get all matches with team details
-      const { data, error } = await supabase
-        .from("matches")
-        .select(`
-          *,
-          team1:team1_id(id, name, short_name, logo_url),
-          team2:team2_id(id, name, short_name, logo_url),
-          winner:winner_id(id, name, short_name, logo_url)
-        `)
-        .order("match_date", { ascending: true })
-        .order("match_time", { ascending: true })
+    // Get all matches with team details
+    const { data, error } = await supabase
+      .from('matches')
+      .select(
+        `
+        *,
+        team1:team1_id(id, name, short_name, logo_url),
+        team2:team2_id(id, name, short_name, logo_url),
+        winner:winner_id(id, name, short_name, logo_url)
+      `
+      )
+      .order('match_date', { ascending: true })
+      .order('match_time', { ascending: true })
 
-      if (error) {
-        console.error("Error fetching matches:", error)
-      } else if (data) {
-        setMatches(data as Match[])
-      }
-
-      setLoading(false)
+    if (error) {
+      console.error('Error fetching matches:', error)
+    } else if (data) {
+      setMatches(data as unknown as Match[])
     }
 
+    setLoading(false)
+  }
+
+  useEffect(() => {
     fetchMatches()
   }, [])
 
   const filteredMatches = matches.filter((match) => {
-    if (activeTab === "all") return true
-    if (activeTab === "today") return isToday(match.match_date)
-    if (activeTab === "upcoming") return new Date(match.match_date) >= new Date() && match.status === "upcoming"
-    if (activeTab === "past") return match.status === "completed"
+    if (activeTab === 'all') return true
+    if (activeTab === 'today') return isToday(match.match_date)
+    if (activeTab === 'upcoming')
+      return new Date(match.match_date) >= new Date() && match.status === 'upcoming'
+    if (activeTab === 'past') return match.status === 'completed'
     return true
   })
 
@@ -78,7 +81,12 @@ export function MatchList() {
           ) : filteredMatches.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {filteredMatches.map((match) => (
-                <MatchCard key={match.id} match={match} showVoteControls={isToday(match.match_date)} />
+                <MatchCard
+                  key={match.id}
+                  match={match}
+                  showVoteControls={isToday(match.match_date)}
+                  onMatchUpdated={fetchMatches}
+                />
               ))}
             </div>
           ) : (
@@ -91,4 +99,3 @@ export function MatchList() {
     </div>
   )
 }
-

@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import type { Database } from '@/lib/database.types'
 import { AlertCircle, Check } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AdminMatchActions } from '@/components/admin/admin-match-actions'
+import { User as UserType } from '@supabase/supabase-js'
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row'] & {
@@ -21,10 +23,17 @@ interface MatchCardProps {
   match: Match
   showVoteControls?: boolean
   onVoteSuccess?: () => void
+  onMatchUpdated?: () => void
 }
 
-export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: MatchCardProps) {
-  const [user, setUser] = useState<any>(null)
+export function MatchCard({
+  match,
+  showVoteControls = false,
+  onVoteSuccess,
+  onMatchUpdated,
+}: MatchCardProps) {
+  const [user, setUser] = useState<UserType | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userVote, setUserVote] = useState<string | null>(null)
@@ -32,6 +41,9 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
 
   const matchStatus = getMatchStatus(match)
   const isVotingEnabled = showVoteControls && matchStatus === 'upcoming'
+  const showAdminControls =
+    isAdmin &&
+    (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
 
   useEffect(() => {
     const getUser = async () => {
@@ -51,6 +63,17 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
 
         if (voteData) {
           setUserVote(voteData.team_id)
+        }
+
+        // Check if user is admin
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single()
+
+        if (profileData) {
+          setIsAdmin(profileData.is_admin || false)
         }
       }
     }
@@ -146,7 +169,17 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
             {formatTime(match.match_time)} • {match.venue}
           </p>
         </div>
-        {getStatusBadge()}
+        <div className="flex items-center gap-2">
+          {getStatusBadge()}
+          {showAdminControls && (
+            <AdminMatchActions
+              match={match}
+              onMatchUpdated={() => {
+                if (onMatchUpdated) onMatchUpdated()
+              }}
+            />
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="p-6">
@@ -163,7 +196,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
               {match.team1.logo_url ? (
                 <img
                   src={match.team1.logo_url || '/placeholder.svg'}
-                  alt={match.team1.short_name}
+                  alt={match.team1.name}
                   className="w-12 h-12 object-contain"
                 />
               ) : (
@@ -193,7 +226,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
               {match.team2.logo_url ? (
                 <img
                   src={match.team2.logo_url || '/placeholder.svg'}
-                  alt={match.team2.short_name}
+                  alt={match.team2.name}
                   className="w-12 h-12 object-contain"
                 />
               ) : (

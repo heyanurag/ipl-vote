@@ -1,25 +1,27 @@
-"use client"
+'use client'
 
-import type React from "react"
+import type React from 'react'
 
-import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import { supabase } from "@/lib/supabase"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { AlertCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
 
 export function AuthForm() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { toast } = useToast()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,9 +43,13 @@ export function AuthForm() {
       if (error) throw error
 
       // Show success message or redirect
-      alert("Check your email for the confirmation link!")
+      toast({
+        title: 'Registration Successful',
+        description: 'Check your email for the confirmation link!',
+        variant: 'default',
+      })
     } catch (error: any) {
-      setError(error.message || "An error occurred during sign up")
+      setError(error.message || 'An error occurred during sign up')
     } finally {
       setLoading(false)
     }
@@ -62,9 +68,9 @@ export function AuthForm() {
 
       if (error) throw error
 
-      navigate("/")
+      navigate('/')
     } catch (error: any) {
-      setError(error.message || "An error occurred during sign in")
+      setError(error.message || 'An error occurred during sign in')
     } finally {
       setLoading(false)
     }
@@ -78,7 +84,9 @@ export function AuthForm() {
             <TabsTrigger value="signin">Sign In</TabsTrigger>
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
-          <CardDescription className="pt-4">Enter your credentials to access your account</CardDescription>
+          <CardDescription className="pt-4">
+            Enter your credentials to access your account
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -113,7 +121,7 @@ export function AuthForm() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
           </TabsContent>
@@ -152,7 +160,7 @@ export function AuthForm() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing up..." : "Sign Up"}
+                {loading ? 'Signing up...' : 'Sign Up'}
               </Button>
             </form>
           </TabsContent>
@@ -161,4 +169,3 @@ export function AuthForm() {
     </Card>
   )
 }
-
