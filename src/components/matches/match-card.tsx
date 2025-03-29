@@ -1,17 +1,17 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
-import { formatDate, formatTime, getMatchStatus } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import type { Database } from "@/lib/database.types"
-import { AlertCircle, Check } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { formatDate, formatTime, getMatchStatus } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import type { Database } from '@/lib/database.types'
+import { AlertCircle, Check } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
-type Team = Database["public"]["Tables"]["teams"]["Row"]
-type Match = Database["public"]["Tables"]["matches"]["Row"] & {
+type Team = Database['public']['Tables']['teams']['Row']
+type Match = Database['public']['Tables']['matches']['Row'] & {
   team1: Team
   team2: Team
   winner?: Team
@@ -31,7 +31,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
   const [voteCount, setVoteCount] = useState<{ [key: string]: number }>({})
 
   const matchStatus = getMatchStatus(match)
-  const isVotingEnabled = showVoteControls && matchStatus === "upcoming"
+  const isVotingEnabled = showVoteControls && matchStatus === 'upcoming'
 
   useEffect(() => {
     const getUser = async () => {
@@ -43,10 +43,10 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
       if (user) {
         // Check if user has already voted
         const { data: voteData } = await supabase
-          .from("votes")
-          .select("team_id")
-          .eq("match_id", match.id)
-          .eq("user_id", user.id)
+          .from('votes')
+          .select('team_id')
+          .eq('match_id', match.id)
+          .eq('user_id', user.id)
           .single()
 
         if (voteData) {
@@ -59,7 +59,10 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
 
     // Get vote counts
     const getVoteCounts = async () => {
-      const { data: votes } = await supabase.from("votes").select("team_id").eq("match_id", match.id)
+      const { data: votes } = await supabase
+        .from('votes')
+        .select('team_id')
+        .eq('match_id', match.id)
 
       if (votes) {
         const counts: { [key: string]: number } = {}
@@ -75,7 +78,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
 
   const handleVote = async (teamId: string) => {
     if (!user) {
-      setError("You must be logged in to vote")
+      setError('You must be logged in to vote')
       return
     }
 
@@ -83,7 +86,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
     setError(null)
 
     try {
-      const { error } = await supabase.from("votes").insert({
+      const { error } = await supabase.from('votes').insert({
         user_id: user.id,
         match_id: match.id,
         team_id: teamId,
@@ -103,12 +106,12 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
         onVoteSuccess()
       }
     } catch (error: any) {
-      if (error.code === "23505") {
-        setError("You have already voted for this match")
-      } else if (error.code === "42501") {
+      if (error.code === '23505') {
+        setError('You have already voted for this match')
+      } else if (error.code === '42501') {
         setError("You can only vote for today's matches")
       } else {
-        setError(error.message || "An error occurred while voting")
+        setError(error.message || 'An error occurred while voting')
       }
     } finally {
       setLoading(false)
@@ -117,15 +120,15 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
 
   const getStatusBadge = () => {
     switch (matchStatus) {
-      case "upcoming":
+      case 'upcoming':
         return <Badge variant="outline">Upcoming</Badge>
-      case "live":
+      case 'live':
         return (
           <Badge variant="secondary" className="bg-orange-500 text-white hover:bg-orange-600">
             Live
           </Badge>
         )
-      case "completed":
+      case 'completed':
         return (
           <Badge variant="secondary" className="bg-green-500 text-white hover:bg-green-600">
             Completed
@@ -159,18 +162,23 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-2">
               {match.team1.logo_url ? (
                 <img
-                  src={match.team1.logo_url || "/placeholder.svg"}
-                  alt={match.team1.name}
+                  src={match.team1.logo_url || '/placeholder.svg'}
+                  alt={match.team1.short_name}
                   className="w-12 h-12 object-contain"
                 />
               ) : (
                 <span className="text-xl font-bold">{match.team1.short_name}</span>
               )}
             </div>
-            <h3 className="font-semibold">{match.team1.name}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{voteCount[match.team1_id] || 0} votes</p>
+            <h3 className="font-semibold">{match.team1.short_name}</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {voteCount[match.team1_id] || 0} votes
+            </p>
             {match.winner_id === match.team1_id && (
-              <Badge variant="outline" className="mt-2 bg-green-100 text-green-800 border-green-200">
+              <Badge
+                variant="outline"
+                className="mt-2 bg-green-100 text-green-800 border-green-200"
+              >
                 Winner
               </Badge>
             )}
@@ -184,18 +192,23 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-2">
               {match.team2.logo_url ? (
                 <img
-                  src={match.team2.logo_url || "/placeholder.svg"}
-                  alt={match.team2.name}
+                  src={match.team2.logo_url || '/placeholder.svg'}
+                  alt={match.team2.short_name}
                   className="w-12 h-12 object-contain"
                 />
               ) : (
                 <span className="text-xl font-bold">{match.team2.short_name}</span>
               )}
             </div>
-            <h3 className="font-semibold">{match.team2.name}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{voteCount[match.team2_id] || 0} votes</p>
+            <h3 className="font-semibold">{match.team2.short_name}</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {voteCount[match.team2_id] || 0} votes
+            </p>
             {match.winner_id === match.team2_id && (
-              <Badge variant="outline" className="mt-2 bg-green-100 text-green-800 border-green-200">
+              <Badge
+                variant="outline"
+                className="mt-2 bg-green-100 text-green-800 border-green-200"
+              >
                 Winner
               </Badge>
             )}
@@ -206,7 +219,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
       {isVotingEnabled && (
         <CardFooter className="bg-muted p-4 flex justify-between">
           <Button
-            variant={userVote === match.team1_id ? "default" : "outline"}
+            variant={userVote === match.team1_id ? 'default' : 'outline'}
             className="w-[45%]"
             onClick={() => handleVote(match.team1_id)}
             disabled={loading || !!userVote}
@@ -216,7 +229,7 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
           </Button>
 
           <Button
-            variant={userVote === match.team2_id ? "default" : "outline"}
+            variant={userVote === match.team2_id ? 'default' : 'outline'}
             className="w-[45%]"
             onClick={() => handleVote(match.team2_id)}
             disabled={loading || !!userVote}
@@ -229,4 +242,3 @@ export function MatchCard({ match, showVoteControls = false, onVoteSuccess }: Ma
     </Card>
   )
 }
-
