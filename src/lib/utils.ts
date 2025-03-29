@@ -56,8 +56,8 @@ export function getMatchStatus(match: Match): 'upcoming' | 'live' | 'completed' 
     return 'live'
   }
 
-  const matchDateTimeString = `${match.match_date}T${match.match_time}`
-  const matchTimestamp = Date.parse(matchDateTimeString)
+  // because match_date and match-time are IST.
+  const matchTimestamp = Date.parse(`${match.match_date}T${match.match_time}+05:30`)
   const nowTimestamp = Date.now()
 
   if (matchTimestamp <= nowTimestamp) {
