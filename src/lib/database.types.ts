@@ -97,6 +97,7 @@ export type Database = {
           created_at: string | null
           data: Json | null
           id: string
+          is_admin: boolean | null
           total_correct_votes: number | null
           username: string
         }
@@ -104,6 +105,7 @@ export type Database = {
           created_at?: string | null
           data?: Json | null
           id: string
+          is_admin?: boolean | null
           total_correct_votes?: number | null
           username: string
         }
@@ -111,6 +113,7 @@ export type Database = {
           created_at?: string | null
           data?: Json | null
           id?: string
+          is_admin?: boolean | null
           total_correct_votes?: number | null
           username?: string
         }
@@ -187,6 +190,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_update_match_result: {
+        Args: {
+          p_match_id: string
+          p_winner_id: string
+          p_status?: string
+        }
+        Returns: boolean
+      }
+      generate_sample_matches: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_leaderboard: {
         Args: {
           limit_count?: number
@@ -211,6 +226,12 @@ export type Database = {
           venue: string | null
           winner_id: string | null
         }[]
+      }
+      is_admin: {
+        Args: {
+          user_id: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
