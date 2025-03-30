@@ -10,6 +10,7 @@ a simple web app that allows users to vote on ipl cricket matches and track thei
 - leaderboard showing top predictors
 - user profiles with stats and voting history
 - admin functionality to set match results
+- progressive web app functionality
 
 ### tech stack
 
@@ -30,6 +31,7 @@ a simple web app that allows users to vote on ipl cricket matches and track thei
 ### database schema
 
 the app uses the following postgres tables. The db is on supabase
+
 - `profiles`: user information
 - `teams`: ipl teams
 - `matches`: match details including winner
