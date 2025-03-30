@@ -9,11 +9,11 @@ import { ProfilePage } from '@/pages/profile-page'
 import { AuthPage } from '@/pages/auth-page'
 import { AuthProvider } from '@/lib/auth-context'
 import { ProtectedRoute } from '@/components/auth/protected-route'
+import { Toaster } from '@/components/ui/sonner'
 import { useAuth } from '@/lib/auth-context'
 
 function AppRoutes() {
-  const { user, profile } = useAuth()
-  console.log({ user, profile })
+  const { user } = useAuth()
 
   return (
     <Routes>
@@ -44,6 +44,7 @@ function App() {
             </main>
           </div>
         </Router>
+        <Toaster richColors position="top-right" />
       </ThemeProvider>
     </AuthProvider>
   )

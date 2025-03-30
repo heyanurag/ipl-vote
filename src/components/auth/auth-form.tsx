@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 import { AuthError } from '@supabase/supabase-js'
 
 export function AuthForm() {
@@ -22,7 +22,6 @@ export function AuthForm() {
   const [username, setUsername] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,10 +64,8 @@ export function AuthForm() {
       }
 
       // Show success message
-      toast({
-        title: 'Registration Successful',
+      toast.success('Registration Successful', {
         description: 'Check your email for the confirmation link!',
-        variant: 'default',
       })
 
       // Redirect to home page

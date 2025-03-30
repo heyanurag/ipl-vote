@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/components/ui/use-toast'
+import { toast } from 'sonner'
 import { MoreVertical, Trophy } from 'lucide-react'
 import type { Database } from '@/lib/database.types'
 
@@ -39,15 +39,10 @@ export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsPr
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedWinner, setSelectedWinner] = useState<string | null>(match.winner_id || null)
   const [isUpdating, setIsUpdating] = useState(false)
-  const { toast } = useToast()
 
   const handleUpdateMatch = async () => {
     if (!selectedWinner) {
-      toast({
-        title: 'Error',
-        description: 'Please select a winning team',
-        variant: 'destructive',
-      })
+      toast.warning('Please select a winning team')
       return
     }
 
@@ -63,19 +58,12 @@ export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsPr
 
       if (error) throw error
 
-      toast({
-        title: 'Success',
-        description: 'Match result has been updated',
-      })
+      toast.success('Match result has been updated')
 
       setIsDialogOpen(false)
       onMatchUpdated()
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update match result',
-        variant: 'destructive',
-      })
+      toast.error('Failed to update match result')
     } finally {
       setIsUpdating(false)
     }
