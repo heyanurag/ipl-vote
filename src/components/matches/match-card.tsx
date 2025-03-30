@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,6 +24,8 @@ interface MatchCardProps {
   showVoteControls?: boolean
   onVoteSuccess?: () => void
   onMatchUpdated?: () => void
+  userVote?: string | null
+  voteCount?: { [key: string]: number }
 }
 
 export function MatchCard({
@@ -31,52 +33,18 @@ export function MatchCard({
   showVoteControls = false,
   onVoteSuccess,
   onMatchUpdated,
+  userVote,
+  voteCount = {},
 }: MatchCardProps) {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [userVote, setUserVote] = useState<string | null>(null)
-  const [voteCount, setVoteCount] = useState<{ [key: string]: number }>({})
 
   const matchStatus = getMatchStatus(match)
   const isVotingEnabled = showVoteControls && matchStatus === 'upcoming'
   const showAdminControls =
     profile?.is_admin &&
     (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
-
-  useEffect(() => {
-    const fetchVoteData = async () => {
-      if (user) {
-        // Check if user has already voted
-        const { data: voteData } = await supabase
-          .from('votes')
-          .select('team_id')
-          .eq('match_id', match.id)
-          .eq('user_id', user.id)
-          .single()
-
-        if (voteData) {
-          setUserVote(voteData.team_id)
-        }
-      }
-
-      // Get vote counts
-      const { data: votes } = await supabase
-        .from('votes')
-        .select('team_id')
-        .eq('match_id', match.id)
-
-      if (votes) {
-        const counts: { [key: string]: number } = {}
-        votes.forEach((vote) => {
-          counts[vote.team_id] = (counts[vote.team_id] || 0) + 1
-        })
-        setVoteCount(counts)
-      }
-    }
-
-    fetchVoteData()
-  }, [match.id, user])
 
   const handleVote = async (teamId: string) => {
     if (!user) return
@@ -93,7 +61,6 @@ export function MatchCard({
 
       if (error) throw error
 
-      setUserVote(teamId)
       onVoteSuccess?.()
     } catch (error: unknown) {
       if (error instanceof Error) {

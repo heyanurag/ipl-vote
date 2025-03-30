@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { MatchCard } from '@/components/matches/match-card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { MatchCard } from '@/components/matches/match-card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { isToday } from '@/lib/utils'
 import type { Database } from '@/lib/database.types'
+import { useAuth } from '@/lib/auth-context'
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row'] & {
@@ -19,6 +20,11 @@ export function MatchList() {
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('all')
+  const [voteData, setVoteData] = useState<{
+    userVotes: { [key: string]: string }
+    voteCounts: { [key: string]: { [key: string]: number } }
+  }>({ userVotes: {}, voteCounts: {} })
+  const { user } = useAuth()
 
   const fetchMatches = async () => {
     setLoading(true)
@@ -41,6 +47,45 @@ export function MatchList() {
       console.error('Error fetching matches:', error)
     } else if (data) {
       setMatches(data as unknown as Match[])
+
+      // Fetch vote data for all matches
+      if (user) {
+        const matchIds = data.map((match) => match.id)
+
+        // Get user's votes for all matches
+        const { data: userVotes } = await supabase
+          .from('votes')
+          .select('match_id, team_id')
+          .eq('user_id', user.id)
+          .in('match_id', matchIds)
+
+        // Get vote counts for all matches
+        const { data: allVotes } = await supabase
+          .from('votes')
+          .select('match_id, team_id')
+          .in('match_id', matchIds)
+
+        // Process user votes
+        const userVotesMap: { [key: string]: string } = {}
+        userVotes?.forEach((vote) => {
+          userVotesMap[vote.match_id] = vote.team_id
+        })
+
+        // Process vote counts
+        const voteCountsMap: { [key: string]: { [key: string]: number } } = {}
+        allVotes?.forEach((vote) => {
+          if (!voteCountsMap[vote.match_id]) {
+            voteCountsMap[vote.match_id] = {}
+          }
+          voteCountsMap[vote.match_id][vote.team_id] =
+            (voteCountsMap[vote.match_id][vote.team_id] || 0) + 1
+        })
+
+        setVoteData({
+          userVotes: userVotesMap,
+          voteCounts: voteCountsMap,
+        })
+      }
     }
 
     setLoading(false)
@@ -48,7 +93,7 @@ export function MatchList() {
 
   useEffect(() => {
     fetchMatches()
-  }, [])
+  }, [user])
 
   const filteredMatches = matches.filter((match) => {
     if (activeTab === 'all') return true
@@ -85,6 +130,8 @@ export function MatchList() {
                   key={match.id}
                   match={match}
                   showVoteControls={isToday(match.match_date)}
+                  userVote={voteData.userVotes[match.id]}
+                  voteCount={voteData.voteCounts[match.id]}
                   onMatchUpdated={fetchMatches}
                 />
               ))}

@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { MatchCard } from '@/components/matches/match-card'
-import { Leaderboard } from '@/components/home/leaderboard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Link } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { MatchCard } from '@/components/matches/match-card'
 import type { Database } from '@/lib/database.types'
 import { CalendarDays } from 'lucide-react'
+import { useAuth } from '@/lib/auth-context'
+import { Leaderboard } from '@/components/home/leaderboard'
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row'] & {
@@ -20,6 +21,11 @@ type Match = Database['public']['Tables']['matches']['Row'] & {
 export function HomePage() {
   const [todayMatches, setTodayMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
+  const [voteData, setVoteData] = useState<{
+    userVotes: { [key: string]: string }
+    voteCounts: { [key: string]: { [key: string]: number } }
+  }>({ userVotes: {}, voteCounts: {} })
+  const { user } = useAuth()
 
   const fetchTodayMatches = async () => {
     setLoading(true)
@@ -54,6 +60,43 @@ export function HomePage() {
         console.error('Error fetching match details:', teamError)
       } else if (matchesWithTeams) {
         setTodayMatches(matchesWithTeams as unknown as Match[])
+
+        // Fetch vote data for all matches
+        if (user) {
+          // Get user's votes for today's matches
+          const { data: userVotes } = await supabase
+            .from('votes')
+            .select('match_id, team_id')
+            .eq('user_id', user.id)
+            .in('match_id', matchIds)
+
+          // Get vote counts for all matches
+          const { data: allVotes } = await supabase
+            .from('votes')
+            .select('match_id, team_id')
+            .in('match_id', matchIds)
+
+          // Process user votes
+          const userVotesMap: { [key: string]: string } = {}
+          userVotes?.forEach((vote) => {
+            userVotesMap[vote.match_id] = vote.team_id
+          })
+
+          // Process vote counts
+          const voteCountsMap: { [key: string]: { [key: string]: number } } = {}
+          allVotes?.forEach((vote) => {
+            if (!voteCountsMap[vote.match_id]) {
+              voteCountsMap[vote.match_id] = {}
+            }
+            voteCountsMap[vote.match_id][vote.team_id] =
+              (voteCountsMap[vote.match_id][vote.team_id] || 0) + 1
+          })
+
+          setVoteData({
+            userVotes: userVotesMap,
+            voteCounts: voteCountsMap,
+          })
+        }
       }
     } else {
       setTodayMatches([])
@@ -64,7 +107,7 @@ export function HomePage() {
 
   useEffect(() => {
     fetchTodayMatches()
-  }, [])
+  }, [user])
 
   return (
     <div className="container py-6 max-w-7xl">
@@ -89,6 +132,8 @@ export function HomePage() {
                       key={match.id}
                       match={match}
                       showVoteControls={true}
+                      userVote={voteData.userVotes[match.id]}
+                      voteCount={voteData.voteCounts[match.id]}
                       onVoteSuccess={() => {
                         // Refresh the matches after voting
                         fetchTodayMatches()
@@ -115,7 +160,6 @@ export function HomePage() {
             </CardContent>
           </Card>
         </div>
-
         <div>
           <Leaderboard />
         </div>
