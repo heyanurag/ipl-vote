@@ -11,6 +11,7 @@ import { AlertCircle, Check } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AdminMatchActions } from '@/components/admin/admin-match-actions'
 import { useAuth } from '@/lib/auth-context'
+import { toast } from 'sonner'
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row'] & {
@@ -38,7 +39,6 @@ export function MatchCard({
 }: MatchCardProps) {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const matchStatus = getMatchStatus(match)
   const isVotingEnabled = showVoteControls && matchStatus === 'upcoming'
@@ -47,10 +47,12 @@ export function MatchCard({
     (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
 
   const handleVote = async (teamId: string) => {
-    if (!user) return
+    if (!user) {
+      toast.error('Please log in to vote')
+      return
+    }
 
     setLoading(true)
-    setError(null)
 
     try {
       const { error } = await supabase.from('votes').insert({
@@ -64,9 +66,11 @@ export function MatchCard({
       onVoteSuccess?.()
     } catch (error: unknown) {
       if (error instanceof Error) {
-        setError(error.message)
+        toast.error('An error occurred while voting man', {
+          description: error.message,
+        })
       } else {
-        setError('An error occurred while voting')
+        toast.error('An error occurred while voting')
       }
     } finally {
       setLoading(false)
@@ -115,13 +119,6 @@ export function MatchCard({
       </CardHeader>
 
       <CardContent className="p-6">
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <div className="flex items-center justify-between">
           <div className="flex flex-col items-center text-center w-1/3">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-2">
