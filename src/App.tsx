@@ -10,6 +10,7 @@ import { AuthPage } from '@/pages/auth-page'
 import { AuthProvider } from '@/lib/auth-context'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Toaster } from '@/components/ui/sonner'
+import { Analytics } from '@vercel/analytics/react'
 import { useAuth } from '@/lib/auth-context'
 
 function AppRoutes() {
@@ -45,6 +46,7 @@ function App() {
           </div>
         </Router>
         <Toaster richColors position="top-right" />
+        <Analytics />
       </ThemeProvider>
     </AuthProvider>
   )
