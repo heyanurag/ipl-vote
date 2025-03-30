@@ -1,89 +1,51 @@
 'use client'
 
-import type React from 'react'
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Header } from '@/components/layout/header'
 import { HomePage } from '@/pages/home-page'
 import { MatchesPage } from '@/pages/matches-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { AuthPage } from '@/pages/auth-page'
+import { AuthProvider } from '@/lib/auth-context'
+import { ProtectedRoute } from '@/components/auth/protected-route'
+import { useAuth } from '@/lib/auth-context'
 
-function App() {
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Get current user
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
-
-    getUser()
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(event)
-      setUser(session?.user || null)
-      setLoading(false)
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  // Protected route component
-  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (loading) return <div>Loading...</div>
-
-    if (!user) {
-      return <Navigate to="/auth" replace />
-    }
-
-    return <>{children}</>
-  }
+function AppRoutes() {
+  const { user, profile } = useAuth()
+  console.log({ user, profile })
 
   return (
-    <ThemeProvider defaultTheme="system" storageKey="ipl-voting-theme">
-      <Router>
-        <div className="min-h-screen flex flex-col">
-          <Header />
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/matches" element={<MatchesPage />} />
+      <Route
+        path="/profile/:id"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+    </Routes>
+  )
+}
 
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/matches" element={<MatchesPage />} />
-              <Route
-                path="/profile/:id"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-
-          <footer className="border-t py-6">
-            <div className="container text-center text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} IPL Voting App
-            </div>
-          </footer>
-        </div>
-      </Router>
-    </ThemeProvider>
+function App() {
+  return (
+    <AuthProvider>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <Router>
+          <div className="min-h-screen bg-background">
+            <Header />
+            <main>
+              <AppRoutes />
+            </main>
+          </div>
+        </Router>
+      </ThemeProvider>
+    </AuthProvider>
   )
 }
 

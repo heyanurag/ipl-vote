@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -14,57 +12,15 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { User, LogOut, Trophy, Calendar } from 'lucide-react'
-import { User as UserType } from '@supabase/supabase-js'
+import { useAuth } from '@/lib/auth-context'
 
 export function Header() {
   const navigate = useNavigate()
-  const [user, setUser] = useState<UserType | null>(null)
-  const [username, setUsername] = useState<string>('')
-
-  useEffect(() => {
-    // Get current user
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-
-      if (user) {
-        // Get user profile
-        const { data } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('id', user.id)
-          .single()
-
-        if (data) {
-          setUsername(data.username)
-        }
-      }
-    }
-
-    getUser()
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser(session.user)
-        navigate('/')
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-        navigate('/auth')
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [navigate])
+  const { user, profile, signOut } = useAuth()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await signOut()
+    navigate('/auth')
   }
 
   return (
@@ -99,13 +55,15 @@ export function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback>{username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>
+                      {profile?.username.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex flex-col space-y-1 p-2">
-                  <p className="text-sm font-medium leading-none">{username}</p>
+                  <p className="text-sm font-medium leading-none">{profile?.username}</p>
                   <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />

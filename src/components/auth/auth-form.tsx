@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
+import { AuthError } from '@supabase/supabase-js'
 
 export function AuthForm() {
   const navigate = useNavigate()
@@ -29,7 +30,7 @@ export function AuthForm() {
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -42,14 +43,45 @@ export function AuthForm() {
 
       if (error) throw error
 
-      // Show success message or redirect
+      if (!data.user?.id) {
+        throw new Error('No user ID returned from signup')
+      }
+
+      // Wait for profile to be created
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single()
+
+      if (profileError) {
+        console.error('Error fetching profile after signup:', profileError)
+        throw new Error('Failed to create profile')
+      }
+
+      if (!profileData) {
+        console.error('No profile data found after signup')
+        throw new Error('Failed to create profile')
+      }
+
+      // Show success message
       toast({
         title: 'Registration Successful',
         description: 'Check your email for the confirmation link!',
         variant: 'default',
       })
-    } catch (error: any) {
-      setError(error.message || 'An error occurred during sign up')
+
+      // Redirect to home page
+      navigate('/')
+    } catch (error) {
+      console.error('Signup error:', error)
+      if (error instanceof AuthError) {
+        setError(error.message)
+      } else if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('An error occurred during sign up')
+      }
     } finally {
       setLoading(false)
     }
@@ -69,8 +101,14 @@ export function AuthForm() {
       if (error) throw error
 
       navigate('/')
-    } catch (error: any) {
-      setError(error.message || 'An error occurred during sign in')
+    } catch (error) {
+      if (error instanceof AuthError) {
+        setError(error.message)
+      } else if (error instanceof Error) {
+        setError(error.message)
+      } else {
+        setError('An error occurred during sign in')
+      }
     } finally {
       setLoading(false)
     }

@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { formatDate, formatTime, getMatchStatus } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { formatDate, formatTime, getMatchStatus } from '@/lib/utils'
 import type { Database } from '@/lib/database.types'
 import { AlertCircle, Check } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AdminMatchActions } from '@/components/admin/admin-match-actions'
-import { User as UserType } from '@supabase/supabase-js'
+import { useAuth } from '@/lib/auth-context'
 
 type Team = Database['public']['Tables']['teams']['Row']
 type Match = Database['public']['Tables']['matches']['Row'] & {
@@ -32,8 +32,7 @@ export function MatchCard({
   onVoteSuccess,
   onMatchUpdated,
 }: MatchCardProps) {
-  const [user, setUser] = useState<UserType | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [userVote, setUserVote] = useState<string | null>(null)
@@ -42,16 +41,11 @@ export function MatchCard({
   const matchStatus = getMatchStatus(match)
   const isVotingEnabled = showVoteControls && matchStatus === 'upcoming'
   const showAdminControls =
-    isAdmin &&
+    profile?.is_admin &&
     (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
 
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      setUser(user)
-
+    const fetchVoteData = async () => {
       if (user) {
         // Check if user has already voted
         const { data: voteData } = await supabase
@@ -64,24 +58,9 @@ export function MatchCard({
         if (voteData) {
           setUserVote(voteData.team_id)
         }
-
-        // Check if user is admin
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single()
-
-        if (profileData) {
-          setIsAdmin(profileData.is_admin || false)
-        }
       }
-    }
 
-    getUser()
-
-    // Get vote counts
-    const getVoteCounts = async () => {
+      // Get vote counts
       const { data: votes } = await supabase
         .from('votes')
         .select('team_id')
@@ -96,14 +75,11 @@ export function MatchCard({
       }
     }
 
-    getVoteCounts()
-  }, [match.id])
+    fetchVoteData()
+  }, [match.id, user])
 
   const handleVote = async (teamId: string) => {
-    if (!user) {
-      setError('You must be logged in to vote')
-      return
-    }
+    if (!user) return
 
     setLoading(true)
     setError(null)
@@ -118,23 +94,12 @@ export function MatchCard({
       if (error) throw error
 
       setUserVote(teamId)
-
-      // Update vote count
-      setVoteCount({
-        ...voteCount,
-        [teamId]: (voteCount[teamId] || 0) + 1,
-      })
-
-      if (onVoteSuccess) {
-        onVoteSuccess()
-      }
-    } catch (error: any) {
-      if (error.code === '23505') {
-        setError('You have already voted for this match')
-      } else if (error.code === '42501') {
-        setError("You can only vote for today's matches")
+      onVoteSuccess?.()
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setError(error.message)
       } else {
-        setError(error.message || 'An error occurred while voting')
+        setError('An error occurred while voting')
       }
     } finally {
       setLoading(false)
