@@ -34,6 +34,9 @@ function AppRoutes() {
 }
 
 function App() {
+  console.log('production', import.meta.env.PROD)
+  const isProduction = import.meta.env.PROD
+
   return (
     <AuthProvider>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -45,8 +48,8 @@ function App() {
             </main>
           </div>
         </Router>
-        <Toaster richColors position="top-right" />
-        <Analytics />
+        <Toaster richColors />
+        {isProduction ? <Analytics /> : null}
       </ThemeProvider>
     </AuthProvider>
   )
