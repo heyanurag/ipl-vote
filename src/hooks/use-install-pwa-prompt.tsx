@@ -1,16 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
-declare global {
-  interface WindowEventMap {
-    beforeinstallprompt: BeforeInstallPromptEvent
-  }
-}
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-}
-
 const PWA_PROMPT_TIMESTAMP_KEY = 'pwa-install-toast-timestamp'
 
 const setLastShowTimeStamp = () =>
@@ -25,6 +15,14 @@ const shouldShowToastToday = () => {
   const lastDate = new Date(lastTime)
 
   return today.toDateString() !== lastDate.toDateString()
+}
+
+const isAppInstalled = () => {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true || // ios support
+    document.referrer.includes('android-app://')
+  )
 }
 
 const useInstallPwaPrompt = () => {
@@ -42,7 +40,7 @@ const useInstallPwaPrompt = () => {
   }
 
   useEffect(() => {
-    if (!shouldShowToastToday()) return
+    if (isAppInstalled() || !shouldShowToastToday()) return
 
     const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       e.preventDefault()
