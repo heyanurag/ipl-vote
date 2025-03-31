@@ -12,9 +12,11 @@ import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Toaster } from '@/components/ui/sonner'
 import { Analytics } from '@vercel/analytics/react'
 import { useAuth } from '@/lib/auth-context'
+import { useInstallPwaPrompt } from './hooks/use-install-pwa-prompt'
 
 function AppRoutes() {
   const { user } = useAuth()
+  useInstallPwaPrompt()
 
   return (
     <Routes>
