@@ -36,7 +36,6 @@ function AppRoutes() {
 }
 
 function App() {
-  console.log('production', import.meta.env.PROD)
   const isProduction = import.meta.env.PROD
 
   return (
