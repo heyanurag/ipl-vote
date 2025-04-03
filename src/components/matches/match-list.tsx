@@ -129,10 +129,11 @@ export function MatchList() {
                 <MatchCard
                   key={match.id}
                   match={match}
-                  showVoteControls={isToday(match.match_date)}
+                  showVoteControls={isToday(match.match_date) || match.status === 'completed'}
                   userVote={voteData.userVotes[match.id]}
                   voteCount={voteData.voteCounts[match.id]}
                   onMatchUpdated={fetchMatches}
+                  onVoteSuccess={fetchMatches}
                 />
               ))}
             </div>

@@ -38,9 +38,9 @@ export function MatchCard({
 }: MatchCardProps) {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
-
   const matchStatus = getMatchStatus(match)
-  const isVotingEnabled = showVoteControls && matchStatus === 'upcoming'
+  // Always show voting buttons for today's and past matches when showVoteControls is true
+  const showVotingButtons = showVoteControls
   const showAdminControls =
     profile?.is_admin &&
     (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
@@ -54,18 +54,47 @@ export function MatchCard({
     setLoading(true)
 
     try {
-      const { error } = await supabase.from('votes').insert({
-        user_id: user.id,
-        match_id: match.id,
-        team_id: teamId,
-      })
+      // If user already voted, update their vote instead of inserting a new one
+      if (userVote) {
+        // If they're clicking the same team, don't do anything
+        if (userVote === teamId) {
+          setLoading(false)
+          return
+        }
 
-      if (error) throw error
+        // Update their vote to the new team directly
+        const { error: updateError } = await supabase
+          .from('votes')
+          .update({ team_id: teamId })
+          .match({ user_id: user.id, match_id: match.id })
+
+        if (updateError) {
+          console.error('Error updating vote:', updateError)
+          throw updateError
+        }
+
+        toast.success('Vote updated successfully!')
+      } else {
+        // Insert a new vote
+        const { error: insertError } = await supabase.from('votes').insert({
+          user_id: user.id,
+          match_id: match.id,
+          team_id: teamId,
+        })
+
+        toast.success('Vote successful!')
+
+        if (insertError) {
+          console.error('Error inserting new vote:', insertError)
+          throw insertError
+        }
+      }
 
       onVoteSuccess?.()
     } catch (error: unknown) {
+      console.error('Vote error:', error)
       if (error instanceof Error) {
-        toast.error('An error occurred while voting man', {
+        toast.error('An error occurred while voting', {
           description: error.message,
         })
       } else {
@@ -177,26 +206,28 @@ export function MatchCard({
         </div>
       </CardContent>
 
-      {isVotingEnabled && (
+      {showVotingButtons && (
         <CardFooter className="bg-muted p-4 flex justify-between">
           <Button
             variant={userVote === match.team1_id ? 'default' : 'outline'}
             className="w-[45%]"
             onClick={() => handleVote(match.team1_id)}
-            disabled={loading || !!userVote}
+            disabled={loading || matchStatus !== 'upcoming'}
           >
             {userVote === match.team1_id && <Check className="mr-2 h-4 w-4" />}
-            Vote {match.team1.short_name}
+            {userVote === match.team1_id ? 'Voted ' : 'Vote '}
+            {match.team1.short_name}
           </Button>
 
           <Button
             variant={userVote === match.team2_id ? 'default' : 'outline'}
             className="w-[45%]"
             onClick={() => handleVote(match.team2_id)}
-            disabled={loading || !!userVote}
+            disabled={loading || matchStatus !== 'upcoming'}
           >
             {userVote === match.team2_id && <Check className="mr-2 h-4 w-4" />}
-            Vote {match.team2.short_name}
+            {userVote === match.team2_id ? 'Voted ' : 'Vote '}
+            {match.team2.short_name}
           </Button>
         </CardFooter>
       )}
