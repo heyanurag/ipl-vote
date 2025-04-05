@@ -44,7 +44,7 @@ export function useVoteStats(matches: Match[] | undefined) {
 
   const { data: userVotes = {} } = useQuery({
     queryKey: ['userVotes', ...matchIds],
-    queryFn: () => (userId ? api.votes.getUserVotesForMatches(userId, matchIds) : {}),
+    queryFn: () => api.votes.getUserVotesForMatches(userId, matchIds),
     enabled: !!userId && matchIds.length > 0,
   })
 
@@ -59,20 +59,19 @@ export function useVoteStats(matches: Match[] | undefined) {
 
 export function useCreateOrUpdateVote() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: ({ 
-      userId, 
-      matchId, 
+    mutationFn: ({
+      userId,
+      matchId,
       teamId,
-      hasExistingVote 
-    }: { 
-      userId: string; 
-      matchId: string; 
-      teamId: string;
-      hasExistingVote?: boolean;
-    }) => 
-      api.votes.createOrUpdateVote(userId, matchId, teamId, hasExistingVote),
+      hasExistingVote,
+    }: {
+      userId: string
+      matchId: string
+      teamId: string
+      hasExistingVote?: boolean
+    }) => api.votes.createOrUpdateVote(userId, matchId, teamId, hasExistingVote),
     onSuccess: () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: queryKeys.todaysMatches })

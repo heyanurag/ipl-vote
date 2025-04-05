@@ -31,7 +31,7 @@ interface AdminMatchActionsProps {
 export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedWinner, setSelectedWinner] = useState<string | null>(match.winner_id || null)
-  
+
   // Use React Query mutation
   const updateMatchMutation = useUpdateMatchResult()
 
@@ -51,6 +51,7 @@ export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsPr
       toast.success('Match result has been updated')
       setIsDialogOpen(false)
       onMatchUpdated()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       toast.error('Failed to update match result')
     }
@@ -103,10 +104,17 @@ export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsPr
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={updateMatchMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={updateMatchMutation.isPending}
+            >
               Cancel
             </Button>
-            <Button onClick={handleUpdateMatch} disabled={updateMatchMutation.isPending || !selectedWinner}>
+            <Button
+              onClick={handleUpdateMatch}
+              disabled={updateMatchMutation.isPending || !selectedWinner}
+            >
               {updateMatchMutation.isPending ? 'Updating...' : 'Save Result'}
             </Button>
           </DialogFooter>

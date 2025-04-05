@@ -168,7 +168,13 @@ export const api = {
       return data as unknown as Vote[]
     },
 
-    getUserVotesForMatches: async (userId: string, matchIds: string[]) => {
+    getUserVotesForMatches: async (userId: string | undefined, matchIds: string[]) => {
+      const userVotes: Record<string, string> = {}
+
+      if (!userId) {
+        return {}
+      }
+
       const { data, error } = await supabase
         .from('votes')
         .select('match_id, team_id')
@@ -177,8 +183,7 @@ export const api = {
 
       if (error) throw error
 
-      const userVotes: Record<string, string> = {}
-      data?.forEach((vote) => {
+      data.forEach((vote) => {
         userVotes[vote.match_id] = vote.team_id
       })
 

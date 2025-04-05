@@ -27,14 +27,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const user = await api.auth.getCurrentUser()
         setUser(user)
-        
+
         // Store user ID in query client for access in hooks
         if (user) {
           queryClient.setQueryData(['currentUser', 'id'], user.id)
         } else {
           queryClient.removeQueries({ queryKey: ['currentUser'] })
         }
-        
+
         setLoading(false)
       } catch (error) {
         console.error('Error in getInitialSession:', error)
@@ -51,14 +51,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Auth state changed:', event)
       const newUser = session?.user || null
       setUser(newUser)
-      
+
       // Update user in query client
       if (newUser) {
         queryClient.setQueryData(['currentUser', 'id'], newUser.id)
       } else {
         queryClient.removeQueries({ queryKey: ['currentUser'] })
       }
-      
+
       setLoading(false)
     })
 
@@ -78,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const profileData = await api.profiles.getProfile(user.id)
         setProfile(profileData)
-        
+
         // Store profile in query client for access in hooks
         queryClient.setQueryData(['profile', user.id], profileData)
       } catch (error) {
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       await api.auth.signOut()
-      
+
       // Clear related queries on logout
       queryClient.clear()
     } catch (error) {

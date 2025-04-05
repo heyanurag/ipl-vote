@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { MatchCard } from '@/components/matches/match-card'
 import { CalendarDays } from 'lucide-react'
-import { useAuth } from '@/lib/auth-context'
 import { useTodaysMatches, useVoteStats } from '@/lib/query-hooks'
 import { Leaderboard } from '@/components/home/leaderboard'
 

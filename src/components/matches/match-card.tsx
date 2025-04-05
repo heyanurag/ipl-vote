@@ -31,13 +31,14 @@ export function MatchCard({
 }: MatchCardProps) {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
-  const matchStatus = getMatchStatus(match)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matchStatus = getMatchStatus(match as any)
   // Always show voting buttons for today's and past matches when showVoteControls is true
   const showVotingButtons = showVoteControls
   const showAdminControls =
     profile?.is_admin &&
     (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
-    
+
   // Using React Query mutation for voting
   const votesMutation = useCreateOrUpdateVote()
 
@@ -59,7 +60,7 @@ export function MatchCard({
         userId: user.id,
         matchId: match.id,
         teamId: teamId,
-        hasExistingVote: !!userVote // Pass whether the user has already voted
+        hasExistingVote: !!userVote, // Pass whether the user has already voted
       })
 
       const actionText = userVote ? 'updated' : 'submitted'

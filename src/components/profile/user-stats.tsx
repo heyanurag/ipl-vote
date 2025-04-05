@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProfile, useVotesByUser } from '@/lib/query-hooks'
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 
 interface UserStatsProps {
   userId: string
@@ -11,22 +11,22 @@ interface UserStatsProps {
 export function UserStats({ userId }: UserStatsProps) {
   const { data: profile, isLoading: isProfileLoading } = useProfile(userId)
   const { data: votes = [], isLoading: isVotesLoading } = useVotesByUser(userId)
-  
+
   // Calculate vote stats from the votes data
   const voteStats = useMemo(() => {
     const total = votes.length
-    const correct = votes.filter(v => v.is_correct === true).length
-    const pending = votes.filter(v => v.is_correct === null).length
-    
+    const correct = votes.filter((v) => v.is_correct === true).length
+    const pending = votes.filter((v) => v.is_correct === null).length
+
     return {
       total,
       correct,
-      pending
+      pending,
     }
   }, [votes])
-  
+
   const isLoading = isProfileLoading || isVotesLoading
-  
+
   // Calculate accuracy
   const accuracy = useMemo(() => {
     if (voteStats.total === 0 || voteStats.total === voteStats.pending) return 0
