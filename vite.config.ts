@@ -57,4 +57,27 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-components': [
+            '@/components/ui/card',
+            '@/components/ui/button',
+            '@/components/ui/avatar',
+            '@/components/ui/badge',
+            '@/components/ui/dialog',
+            '@/components/ui/dropdown-menu',
+            '@/components/ui/input',
+            '@/components/ui/label',
+            '@/components/ui/radio-group',
+            '@/components/ui/tabs',
+          ],
+          'data-layer': ['@/lib/query-hooks', '@/lib/api-service', '@/lib/supabase'],
+        }
+      }
+    }
+  }
 })
