@@ -8,6 +8,7 @@ import { MatchesPage } from '@/pages/matches-page'
 import { ProfilePage } from '@/pages/profile-page'
 import { AuthPage } from '@/pages/auth-page'
 import { AuthProvider } from '@/lib/auth-context'
+import { QueryProvider } from '@/lib/query-provider'
 import { ProtectedRoute } from '@/components/auth/protected-route'
 import { Toaster } from '@/components/ui/sonner'
 import { Analytics } from '@vercel/analytics/react'
@@ -39,20 +40,22 @@ function App() {
   const isProduction = import.meta.env.PROD
 
   return (
-    <AuthProvider>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <Router>
-          <div className="min-h-screen bg-background">
-            <Header />
-            <main>
-              <AppRoutes />
-            </main>
-          </div>
-        </Router>
-        <Toaster richColors />
-        {isProduction ? <Analytics /> : null}
-      </ThemeProvider>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <Router>
+            <div className="min-h-screen bg-background">
+              <Header />
+              <main>
+                <AppRoutes />
+              </main>
+            </div>
+          </Router>
+          <Toaster richColors />
+          {isProduction ? <Analytics /> : null}
+        </ThemeProvider>
+      </AuthProvider>
+    </QueryProvider>
   )
 }
 

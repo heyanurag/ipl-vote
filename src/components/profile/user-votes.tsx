@@ -1,70 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatDate } from '@/lib/utils'
-import type { Database } from '@/lib/database.types'
 import { Check, X } from 'lucide-react'
-
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner?: Team
-}
-
-interface Vote {
-  id: string
-  match_id: string
-  team_id: string
-  is_correct: boolean | null
-  created_at: string
-  match: Match
-  team: Team
-}
+import { useVotesByUser } from '@/lib/query-hooks'
 
 interface UserVotesProps {
   userId: string
 }
 
 export function UserVotes({ userId }: UserVotesProps) {
-  const [votes, setVotes] = useState<Vote[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchVotes = async () => {
-      setLoading(true)
-
-      const { data, error } = await supabase
-        .from('votes')
-        .select(
-          `
-          *,
-          team:team_id(*),
-          match:match_id(
-            *,
-            team1:team1_id(*),
-            team2:team2_id(*),
-            winner:winner_id(*)
-          )
-        `
-        )
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching votes:', error)
-      } else if (data) {
-        setVotes(data as unknown as Vote[])
-      }
-
-      setLoading(false)
-    }
-
-    fetchVotes()
-  }, [userId])
+  const { data: votes = [], isLoading } = useVotesByUser(userId)
 
   return (
     <Card>
@@ -72,7 +19,7 @@ export function UserVotes({ userId }: UserVotesProps) {
         <CardTitle>Voting History</CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-20 bg-muted rounded-lg" />

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -21,14 +20,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import { MoreVertical, Trophy } from 'lucide-react'
-import type { Database } from '@/lib/database.types'
-
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner?: Team
-}
+import { useUpdateMatchResult } from '@/lib/query-hooks'
+import type { Match } from '@/lib/api-service'
 
 interface AdminMatchActionsProps {
   match: Match
@@ -38,7 +31,9 @@ interface AdminMatchActionsProps {
 export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedWinner, setSelectedWinner] = useState<string | null>(match.winner_id || null)
-  const [isUpdating, setIsUpdating] = useState(false)
+  
+  // Use React Query mutation
+  const updateMatchMutation = useUpdateMatchResult()
 
   const handleUpdateMatch = async () => {
     if (!selectedWinner) {
@@ -46,26 +41,18 @@ export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsPr
       return
     }
 
-    setIsUpdating(true)
-
     try {
-      // Call the RPC function to update the match as admin
-      const { error } = await supabase.rpc('admin_update_match_result', {
-        p_match_id: match.id,
-        p_winner_id: selectedWinner,
-        p_status: 'completed',
+      await updateMatchMutation.mutateAsync({
+        matchId: match.id,
+        winnerId: selectedWinner,
+        status: 'completed',
       })
 
-      if (error) throw error
-
       toast.success('Match result has been updated')
-
       setIsDialogOpen(false)
       onMatchUpdated()
     } catch (error: any) {
       toast.error('Failed to update match result')
-    } finally {
-      setIsUpdating(false)
     }
   }
 
@@ -116,11 +103,11 @@ export function AdminMatchActions({ match, onMatchUpdated }: AdminMatchActionsPr
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isUpdating}>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={updateMatchMutation.isPending}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateMatch} disabled={isUpdating || !selectedWinner}>
-              {isUpdating ? 'Updating...' : 'Save Result'}
+            <Button onClick={handleUpdateMatch} disabled={updateMatchMutation.isPending || !selectedWinner}>
+              {updateMatchMutation.isPending ? 'Updating...' : 'Save Result'}
             </Button>
           </DialogFooter>
         </DialogContent>

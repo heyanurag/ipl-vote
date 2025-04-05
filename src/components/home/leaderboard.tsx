@@ -1,51 +1,24 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Link } from "react-router-dom"
-import { Trophy } from "lucide-react"
-
-interface LeaderboardEntry {
-  user_id: string
-  username: string
-  correct_votes: number
-  total_votes: number
-}
+import { Link } from 'react-router-dom'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Trophy } from 'lucide-react'
+import { useLeaderboard } from '@/lib/query-hooks'
 
 export function Leaderboard() {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLoading(true)
-
-      const { data, error } = await supabase.rpc("get_leaderboard", { limit_count: 10 })
-
-      if (error) {
-        console.error("Error fetching leaderboard:", error)
-      } else if (data) {
-        setLeaderboard(data)
-      }
-
-      setLoading(false)
-    }
-
-    fetchLeaderboard()
-  }, [])
+  const { data: leaderboard = [], isLoading } = useLeaderboard(10)
 
   const getTrophyColor = (position: number) => {
     switch (position) {
       case 0:
-        return "text-yellow-500"
+        return 'text-yellow-500'
       case 1:
-        return "text-gray-400"
+        return 'text-gray-400'
       case 2:
-        return "text-amber-600"
+        return 'text-amber-600'
       default:
-        return "text-muted-foreground"
+        return 'text-muted-foreground'
     }
   }
 
@@ -55,7 +28,7 @@ export function Leaderboard() {
         <CardTitle className="text-xl font-bold">Leaderboard</CardTitle>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {isLoading ? (
           <div className="space-y-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <div key={i} className="flex items-center gap-2 py-2">
@@ -112,4 +85,3 @@ export function Leaderboard() {
     </Card>
   )
 }
-
