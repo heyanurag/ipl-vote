@@ -13,18 +13,26 @@ import { useAuth } from '@/lib/auth-context'
 import { useInstallPwaPrompt } from './hooks/use-install-pwa-prompt'
 
 // Lazy load page components
-const HomePage = lazy(() => import('@/pages/home-page').then(module => ({ 
-  default: module.HomePage 
-})))
-const MatchesPage = lazy(() => import('@/pages/matches-page').then(module => ({ 
-  default: module.MatchesPage 
-})))
-const ProfilePage = lazy(() => import('@/pages/profile-page').then(module => ({ 
-  default: module.ProfilePage 
-})))
-const AuthPage = lazy(() => import('@/pages/auth-page').then(module => ({ 
-  default: module.AuthPage 
-})))
+const HomePage = lazy(() =>
+  import('@/pages/home-page').then((module) => ({
+    default: module.HomePage,
+  }))
+)
+const MatchesPage = lazy(() =>
+  import('@/pages/matches-page').then((module) => ({
+    default: module.MatchesPage,
+  }))
+)
+const ProfilePage = lazy(() =>
+  import('@/pages/profile-page').then((module) => ({
+    default: module.ProfilePage,
+  }))
+)
+const AuthPage = lazy(() =>
+  import('@/pages/auth-page').then((module) => ({
+    default: module.AuthPage,
+  }))
+)
 
 // Loading fallback component
 const PageLoader = () => (
