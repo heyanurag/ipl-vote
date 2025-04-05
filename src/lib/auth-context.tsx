@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
-import type { Database } from './database.types'
-
-type Profile = Database['public']['Tables']['profiles']['Row']
+import { api } from './api-service'
+import type { Profile } from './api-service'
+import { useQueryClient } from '@tanstack/react-query'
 
 interface AuthContextType {
   user: User | null
@@ -18,16 +18,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
 
   // Effect to handle auth state changes
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const user = await api.auth.getCurrentUser()
         setUser(user)
+
+        // Store user ID in query client for access in hooks
+        if (user) {
+          queryClient.setQueryData(['currentUser', 'id'], user.id)
+        } else {
+          queryClient.removeQueries({ queryKey: ['currentUser'] })
+        }
+
         setLoading(false)
       } catch (error) {
         console.error('Error in getInitialSession:', error)
@@ -42,14 +49,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event)
-      setUser(session?.user || null)
+      const newUser = session?.user || null
+      setUser(newUser)
+
+      // Update user in query client
+      if (newUser) {
+        queryClient.setQueryData(['currentUser', 'id'], newUser.id)
+      } else {
+        queryClient.removeQueries({ queryKey: ['currentUser'] })
+      }
+
       setLoading(false)
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [queryClient])
 
   // Effect to fetch profile when user changes
   useEffect(() => {
@@ -60,25 +76,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single()
-
-        if (profileError) {
-          console.error('Error fetching profile:', profileError)
-          setProfile(null)
-          return
-        }
-
-        if (!profileData) {
-          console.error('No profile data found for user:', user.id)
-          setProfile(null)
-          return
-        }
-
+        const profileData = await api.profiles.getProfile(user.id)
         setProfile(profileData)
+
+        // Store profile in query client for access in hooks
+        queryClient.setQueryData(['profile', user.id], profileData)
       } catch (error) {
         console.error('Error in fetchProfile:', error)
         setProfile(null)
@@ -86,10 +88,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     fetchProfile()
-  }, [user])
+  }, [user, queryClient])
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      await api.auth.signOut()
+
+      // Clear related queries on logout
+      queryClient.clear()
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
   }
 
   return (

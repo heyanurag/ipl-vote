@@ -1,99 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { MatchCard } from '@/components/matches/match-card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { isToday } from '@/lib/utils'
-import type { Database } from '@/lib/database.types'
-import { useAuth } from '@/lib/auth-context'
-
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner?: Team
-}
+import { useMatches, useVoteStats } from '@/lib/query-hooks'
 
 export function MatchList() {
-  const [matches, setMatches] = useState<Match[]>([])
-  const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('all')
-  const [voteData, setVoteData] = useState<{
-    userVotes: { [key: string]: string }
-    voteCounts: { [key: string]: { [key: string]: number } }
-  }>({ userVotes: {}, voteCounts: {} })
-  const { user } = useAuth()
-
-  const fetchMatches = async () => {
-    setLoading(true)
-
-    // Get all matches with team details
-    const { data, error } = await supabase
-      .from('matches')
-      .select(
-        `
-        *,
-        team1:team1_id(id, name, short_name, logo_url),
-        team2:team2_id(id, name, short_name, logo_url),
-        winner:winner_id(id, name, short_name, logo_url)
-      `
-      )
-      .order('match_date', { ascending: true })
-      .order('match_time', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching matches:', error)
-    } else if (data) {
-      setMatches(data as unknown as Match[])
-
-      // Fetch vote data for all matches
-      if (user) {
-        const matchIds = data.map((match) => match.id)
-
-        // Get user's votes for all matches
-        const { data: userVotes } = await supabase
-          .from('votes')
-          .select('match_id, team_id')
-          .eq('user_id', user.id)
-          .in('match_id', matchIds)
-
-        // Get vote counts for all matches
-        const { data: allVotes } = await supabase
-          .from('votes')
-          .select('match_id, team_id')
-          .in('match_id', matchIds)
-
-        // Process user votes
-        const userVotesMap: { [key: string]: string } = {}
-        userVotes?.forEach((vote) => {
-          userVotesMap[vote.match_id] = vote.team_id
-        })
-
-        // Process vote counts
-        const voteCountsMap: { [key: string]: { [key: string]: number } } = {}
-        allVotes?.forEach((vote) => {
-          if (!voteCountsMap[vote.match_id]) {
-            voteCountsMap[vote.match_id] = {}
-          }
-          voteCountsMap[vote.match_id][vote.team_id] =
-            (voteCountsMap[vote.match_id][vote.team_id] || 0) + 1
-        })
-
-        setVoteData({
-          userVotes: userVotesMap,
-          voteCounts: voteCountsMap,
-        })
-      }
-    }
-
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchMatches()
-  }, [user])
+  const { data: matches = [], isLoading } = useMatches()
+  const { userVotes, voteCounts } = useVoteStats(matches)
 
   const filteredMatches = matches.filter((match) => {
     if (activeTab === 'all') return true
@@ -115,7 +32,7 @@ export function MatchList() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          {loading ? (
+          {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="space-y-2">
@@ -130,10 +47,8 @@ export function MatchList() {
                   key={match.id}
                   match={match}
                   showVoteControls={isToday(match.match_date) || match.status === 'completed'}
-                  userVote={voteData.userVotes[match.id]}
-                  voteCount={voteData.voteCounts[match.id]}
-                  onMatchUpdated={fetchMatches}
-                  onVoteSuccess={fetchMatches}
+                  userVote={userVotes[match.id]}
+                  voteCount={voteCounts[match.id]}
                 />
               ))}
             </div>

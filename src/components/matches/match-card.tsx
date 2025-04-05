@@ -1,23 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatTime, getMatchStatus } from '@/lib/utils'
-import type { Database } from '@/lib/database.types'
 import { Check } from 'lucide-react'
 import { AdminMatchActions } from '@/components/admin/admin-match-actions'
 import { useAuth } from '@/lib/auth-context'
 import { toast } from 'sonner'
-
-type Team = Database['public']['Tables']['teams']['Row']
-type Match = Database['public']['Tables']['matches']['Row'] & {
-  team1: Team
-  team2: Team
-  winner?: Team
-}
+import { useCreateOrUpdateVote } from '@/lib/query-hooks'
+import type { Match } from '@/lib/api-service'
 
 interface MatchCardProps {
   match: Match
@@ -38,12 +31,16 @@ export function MatchCard({
 }: MatchCardProps) {
   const { user, profile } = useAuth()
   const [loading, setLoading] = useState(false)
-  const matchStatus = getMatchStatus(match)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const matchStatus = getMatchStatus(match as any)
   // Always show voting buttons for today's and past matches when showVoteControls is true
   const showVotingButtons = showVoteControls
   const showAdminControls =
     profile?.is_admin &&
     (matchStatus === 'live' || matchStatus === 'completed' || match.status === 'upcoming')
+
+  // Using React Query mutation for voting
+  const votesMutation = useCreateOrUpdateVote()
 
   const handleVote = async (teamId: string) => {
     if (!user) {
@@ -51,44 +48,23 @@ export function MatchCard({
       return
     }
 
+    if (userVote === teamId) {
+      toast.info("You've already voted for this team")
+      return
+    }
+
     setLoading(true)
 
     try {
-      // If user already voted, update their vote instead of inserting a new one
-      if (userVote) {
-        // If they're clicking the same team, don't do anything
-        if (userVote === teamId) {
-          setLoading(false)
-          return
-        }
+      await votesMutation.mutateAsync({
+        userId: user.id,
+        matchId: match.id,
+        teamId: teamId,
+        hasExistingVote: !!userVote, // Pass whether the user has already voted
+      })
 
-        // Update their vote to the new team directly
-        const { error: updateError } = await supabase
-          .from('votes')
-          .update({ team_id: teamId })
-          .match({ user_id: user.id, match_id: match.id })
-
-        if (updateError) {
-          console.error('Error updating vote:', updateError)
-          throw updateError
-        }
-
-        toast.success('Vote updated successfully!')
-      } else {
-        // Insert a new vote
-        const { error: insertError } = await supabase.from('votes').insert({
-          user_id: user.id,
-          match_id: match.id,
-          team_id: teamId,
-        })
-
-        toast.success('Vote successful!')
-
-        if (insertError) {
-          console.error('Error inserting new vote:', insertError)
-          throw insertError
-        }
-      }
+      const actionText = userVote ? 'updated' : 'submitted'
+      toast.success(`Vote ${actionText} successfully!`)
 
       onVoteSuccess?.()
     } catch (error: unknown) {

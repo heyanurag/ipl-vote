@@ -1,69 +1,39 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { Tables } from '@/lib/database.types'
+import { useProfile, useVotesByUser } from '@/lib/query-hooks'
+import { useMemo } from 'react'
 
 interface UserStatsProps {
   userId: string
 }
 
-export interface UserProfile extends Tables<'profiles'> {}
-
 export function UserStats({ userId }: UserStatsProps) {
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [voteStats, setVoteStats] = useState({
-    total: 0,
-    correct: 0,
-    pending: 0,
-  })
-  const [loading, setLoading] = useState(true)
+  const { data: profile, isLoading: isProfileLoading } = useProfile(userId)
+  const { data: votes = [], isLoading: isVotesLoading } = useVotesByUser(userId)
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      setLoading(true)
+  // Calculate vote stats from the votes data
+  const voteStats = useMemo(() => {
+    const total = votes.length
+    const correct = votes.filter((v) => v.is_correct === true).length
+    const pending = votes.filter((v) => v.is_correct === null).length
 
-      // Get user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-
-      if (profileError) {
-        console.error('Error fetching profile:', profileError)
-      } else if (profileData) {
-        setProfile(profileData)
-      }
-
-      // Get vote statistics
-      const { data: votesData, error: votesError } = await supabase
-        .from('votes')
-        .select('is_correct')
-        .eq('user_id', userId)
-
-      if (votesError) {
-        console.error('Error fetching votes:', votesError)
-      } else if (votesData) {
-        const total = votesData.length
-        const correct = votesData.filter((v) => v.is_correct === true).length
-        const pending = votesData.filter((v) => v.is_correct === null).length
-
-        setVoteStats({
-          total,
-          correct,
-          pending,
-        })
-      }
-
-      setLoading(false)
+    return {
+      total,
+      correct,
+      pending,
     }
+  }, [votes])
 
-    fetchUserData()
-  }, [userId])
+  const isLoading = isProfileLoading || isVotesLoading
 
-  if (loading) {
+  // Calculate accuracy
+  const accuracy = useMemo(() => {
+    if (voteStats.total === 0 || voteStats.total === voteStats.pending) return 0
+    return Math.round((voteStats.correct / (voteStats.total - voteStats.pending)) * 100)
+  }, [voteStats])
+
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -90,11 +60,6 @@ export function UserStats({ userId }: UserStatsProps) {
       </Card>
     )
   }
-
-  const accuracy =
-    voteStats.total > 0
-      ? Math.round((voteStats.correct / (voteStats.total - voteStats.pending)) * 100)
-      : 0
 
   return (
     <Card>

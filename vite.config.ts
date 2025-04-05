@@ -13,6 +13,22 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /^https?:\/\/.*\/teams\/.*\.svg$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'team-images',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
@@ -57,4 +73,27 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-components': [
+            '@/components/ui/card',
+            '@/components/ui/button',
+            '@/components/ui/avatar',
+            '@/components/ui/badge',
+            '@/components/ui/dialog',
+            '@/components/ui/dropdown-menu',
+            '@/components/ui/input',
+            '@/components/ui/label',
+            '@/components/ui/radio-group',
+            '@/components/ui/tabs',
+          ],
+          'data-layer': ['@/lib/query-hooks', '@/lib/api-service', '@/lib/supabase'],
+        }
+      }
+    }
+  }
 })
