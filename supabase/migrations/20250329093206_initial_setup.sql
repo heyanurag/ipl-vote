@@ -1,9 +1,6 @@
--- enable necessary extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- teams table
 CREATE TABLE teams (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
   short_name TEXT NOT NULL UNIQUE,
   logo_url TEXT,
@@ -12,7 +9,7 @@ CREATE TABLE teams (
 
 -- matches table
 CREATE TABLE matches (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team1_id UUID REFERENCES teams(id) NOT NULL,
   team2_id UUID REFERENCES teams(id) NOT NULL,
   match_date DATE NOT NULL,
@@ -35,7 +32,7 @@ CREATE TABLE profiles (
 
 -- votes table
 CREATE TABLE votes (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) NOT NULL,
   match_id UUID REFERENCES matches(id) NOT NULL,
   team_id UUID REFERENCES teams(id) NOT NULL,
